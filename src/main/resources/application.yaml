@@ -1,0 +1,10 @@
+spring:
+  data:
+    mongodb:
+      database: tdd
+      host: localhost
+      port: 27017
+
+serasa:
+  name: serasa
+  url: http://tddftw.getsandbox.com
