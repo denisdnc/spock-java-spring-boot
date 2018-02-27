@@ -44,7 +44,7 @@ class UserControllerSpec extends Specification {
 
     def "do POST with success"() {
         given: "an valid payload"
-        User user = Fixture.from(User.class).gimme("valid");
+        User user = Fixture.from(User.class).gimme("valid")
         String requestBody = objectMapper.writeValueAsString(user)
 
         when: "the API receives an POST with body"
@@ -52,11 +52,11 @@ class UserControllerSpec extends Specification {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)).andReturn()
 
-        then: "http status should be created"
-        result.getResponse().getStatus() == HttpStatus.CREATED.value()
-
-        and: "serasa returns an valid response"
+        then: "serasa returns an valid response"
         serasaGateway.find(_ as String) >> SerasaWrapper.builder().status("PENDING").build()
+
+        and: "http status should be created"
+        result.getResponse().getStatus() == HttpStatus.CREATED.value()
 
         and: "body should contains"
         User resultBody = objectMapper.readValue(result.getResponse().getContentAsString(), User.class)
@@ -65,6 +65,30 @@ class UserControllerSpec extends Specification {
         resultBody.id != null
         resultBody.errors.empty
         resultBody.status == "PENDING"
+    }
+
+    def "do POST with error"() {
+        given: "an invalid user"
+        User user = Fixture.from(User.class).gimme("invalid")
+        String requestBody = objectMapper.writeValueAsString(user)
+
+        when: "the API receives an POST with body"
+        MvcResult result = mockMvc.perform(post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)).andReturn()
+
+        then: "http status should be unprocessable entity"
+        result.getResponse().getStatus() == HttpStatus.UNPROCESSABLE_ENTITY.value()
+
+        then: "body should contains"
+        User resultBody = objectMapper.readValue(result.getResponse().getContentAsString(), User.class)
+        resultBody.name == ""
+        resultBody.document == ""
+        resultBody.id == null
+        resultBody.status == null
+        resultBody.errors.size() == 2
+        resultBody.errors.any({ error -> error.message == "name is mandatory" })
+        resultBody.errors.any({ error -> error.message == "document is mandatory" })
     }
 
     @TestConfiguration
